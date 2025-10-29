@@ -16,33 +16,38 @@ module load apptainer/1.3.5
 SRC_DIR_HOST="/scratch/wingli/partverse/textured_part_glbs"
 TGT_DIR_HOST="/scratch/quanta/partverse_selected"
 ID_JSON_HOST="/home/quanta/PartCrafter/notebooks/partverse_selected.json"
-PY_SCRIPT_HOST="/home/quanta/PartCrafter/scripts_guangda/01_convert_partverse.py"
-SIF_IMG="/home/quanta/PartCrafter/partcrafter.sif"
-CONDA_ENV="/miniconda3/envs/partcrafter"
+PY_SCRIPT_HOST="/home/quanta/partcrafter/merge_glb.py"
+SIF_IMG="/home/quanta/partcrafter/partcrafter.sif"
 
-# Create output dir on host
+CONDA_ENV_NAME="partcrafter"
+CONDA_ROOT="/miniconda3"
+
+# make sure output dir exists on host
 mkdir -p "$TGT_DIR_HOST"
 
-# Some clusters expose apptainer as a module. Ignore failure.
+# try to load apptainer module if cluster uses environment modules
 module load apptainer 2>/dev/null || true
 
-# Run inside container
-# Bind only what is needed:
-#   source parts dir  -> /mnt/src
-#   target output dir -> /mnt/out
-#   your home         -> /home/quanta  (same path inside)
 apptainer exec \
   --bind "${SRC_DIR_HOST}:/mnt/src" \
   --bind "${TGT_DIR_HOST}:/mnt/out" \
   --bind "/home/quanta:/home/quanta" \
   "$SIF_IMG" \
   bash -lc "
-    set -euo pipefail
-    source /miniconda3/etc/profile.d/conda.sh
-    conda activate $CONDA_ENV
+    set -eo pipefail
 
-    python $PY_SCRIPT_HOST \
-      --json $ID_JSON_HOST \
+    export PATH=${CONDA_ROOT}/bin:\$PATH
+    eval \"\$(conda shell.bash hook)\"
+    conda activate ${CONDA_ENV_NAME}
+
+    python ${PY_SCRIPT_HOST} \
+      --json ${ID_JSON_HOST} \
       --srcdir /mnt/src \
       --tgtdir /mnt/out
   "
+
+
+
+
+
+
