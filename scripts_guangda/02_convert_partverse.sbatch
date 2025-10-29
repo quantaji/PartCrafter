@@ -4,8 +4,8 @@
 #SBATCH --error=merge_partverse_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=16G
 #SBATCH --time=24:00:00
 
 set -euo pipefail
