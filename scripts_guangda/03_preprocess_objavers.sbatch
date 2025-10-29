@@ -11,75 +11,55 @@
 
 set -euo pipefail
 
-# host paths
-INPUT_HOST="/scratch/quanta/objaverse_selected"
-OUTPUT_HOST="/scratch/quanta/objaverse_partpacker_preprocessed"
-WORKDIR_HOST="/home/quanta/PartCrafter"
+# paths
+REPO_HOST="/home/quanta/PartCrafter"
+REPO_MNT="/workspace"
 SIF_IMG="/home/quanta/PartCrafter/partcrafter.sif"
-
 CONDA_ENV_NAME="partcrafter"
 CONDA_ROOT="/miniconda3"
 
-# make sure output dir exists on host
-mkdir -p "$OUTPUT_HOST"
+# run-1 IO
+INPUT1_HOST="/scratch/quanta/objaverse_selected"
+OUTPUT1_HOST="/scratch/quanta/objaverse_partpacker_preprocessed"
 
-# load apptainer module if available
+# run-2 IO
+INPUT2_HOST="/scratch/quanta/partverse_selected"
+OUTPUT2_HOST="/scratch/quanta/partverse_partpacker_preprocessed"
+
+mkdir -p "$OUTPUT1_HOST" "$OUTPUT2_HOST"
+
 module --force purge
 module load StdEnv/2023 apptainer/1.3.5 cuda/12.9
 
-# run container with gpu
-apptainer exec \
-  --nv \
-  --bind "${INPUT_HOST}:/mnt/input" \
-  --bind "${OUTPUT_HOST}:/mnt/output" \
-  --bind "/home/quanta:/home/quanta" \
-  "$SIF_IMG" \
-  bash -lc "
-    set -eo pipefail
+run_once () {
+  local IN_HOST="$1"
+  local OUT_HOST="$2"
 
-    cd ${WORKDIR_HOST}
+  apptainer exec \
+    --nv \
+    --bind "${REPO_HOST}:${REPO_MNT}:ro" \
+    --bind "${IN_HOST}:/mnt/input:ro" \
+    --bind "${OUT_HOST}:/mnt/output" \
+    --pwd "${REPO_MNT}" \
+    "$SIF_IMG" \
+    bash -lc "
+      set -eo pipefail
+      export PATH=${CONDA_ROOT}/bin:\$PATH
+      eval \"\$(conda shell.bash hook)\"
+      conda activate ${CONDA_ENV_NAME}
+      # 关键：让 'import src....' 可见
+      export PYTHONPATH=${REPO_MNT}:\${PYTHONPATH:-}
 
-    export PATH=${CONDA_ROOT}/bin:\$PATH
-    eval \"\$(conda shell.bash hook)\"
-    conda activate ${CONDA_ENV_NAME}
+      # 若仍失败，取消注释下一行查看 sys.path
+      python - <<'PY'; import sys, pprint; pprint.pprint(sys.path); PY
 
-    python datasets/preprocess/preprocess.py \
-      --input /mnt/input \
-      --output /mnt/output
-  "
+      python -m datasets.preprocess.preprocess \
+        --input /mnt/input \
+        --output /mnt/output
+    "
+}
 
-# second 
-INPUT_HOST="/scratch/quanta/partverse_selected"
-OUTPUT_HOST="/scratch/quanta/partverse_partpacker_preprocessed"
-WORKDIR_HOST="/home/quanta/PartCrafter"
-SIF_IMG="/home/quanta/PartCrafter/partcrafter.sif"
-
-CONDA_ENV_NAME="partcrafter"
-CONDA_ROOT="/miniconda3"
-
-# make sure output dir exists on host
-mkdir -p "$OUTPUT_HOST"
-
-# load apptainer module if available
-module load apptainer 2>/dev/null || true
-
-# run container with gpu
-apptainer exec \
-  --nv \
-  --bind "${INPUT_HOST}:/mnt/input" \
-  --bind "${OUTPUT_HOST}:/mnt/output" \
-  --bind "/home/quanta:/home/quanta" \
-  "$SIF_IMG" \
-  bash -lc "
-    set -eo pipefail
-
-    cd ${WORKDIR_HOST}
-
-    export PATH=${CONDA_ROOT}/bin:\$PATH
-    eval \"\$(conda shell.bash hook)\"
-    conda activate ${CONDA_ENV_NAME}
-
-    python datasets/preprocess/preprocess.py \
-      --input /mnt/input \
-      --output /mnt/output
-  "
+# first
+run_once "$INPUT1_HOST" "$OUTPUT1_HOST"
+# second
+run_once "$INPUT2_HOST" "$OUTPUT2_HOST"
