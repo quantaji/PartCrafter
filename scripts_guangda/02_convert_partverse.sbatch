@@ -2,7 +2,6 @@
 #SBATCH --job-name=merge_partverse
 #SBATCH --output=merge_partverse_%j.out
 #SBATCH --error=merge_partverse_%j.err
-#SBATCH --partition=cpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
