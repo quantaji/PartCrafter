@@ -40,13 +40,9 @@ run_once () {
     --bind "${IN_HOST}:/mnt/input:ro" \
     --bind "${OUT_HOST}:/mnt/output" \
     --pwd "${REPO_MNT}" \
-    \
-    # [关键-2] 强制 PyOpenGL 用 EGL，避免 GLX
     --env PYOPENGL_PLATFORM=egl \
     --env EGL_PLATFORM=surfaceless \
     --env MPLBACKEND=Agg \
-    \
-    # [关键-3] 让动态链接优先搜容器内的 libGL，而不是 /.singularity.d/libs
     --env LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:/miniconda3/lib:${LD_LIBRARY_PATH:-}" \
     "$SIF_IMG" \
     bash -lc "
