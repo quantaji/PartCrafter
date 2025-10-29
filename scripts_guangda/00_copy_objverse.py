@@ -31,12 +31,14 @@ def index_srcdir(srcdir: Path):
     建立映射:
     key: 去掉扩展名后的stem
     value: [Path(...), Path(...)]
-    只扫描这一层 不递归
+    不判断文件或目录
+    不递归
+    不调用stat
     """
     mapping = defaultdict(list)
     for p in srcdir.iterdir():
-        if p.is_file():
-            mapping[p.stem].append(p)
+        # Path.iterdir 本身不会stat
+        mapping[p.stem].append(p)
     return mapping
 
 def check_mode(target_stems, stem_to_paths):
@@ -54,20 +56,32 @@ def check_mode(target_stems, stem_to_paths):
     print(f"缺失 {len(missing_stems)} 个stem")
 
     if exist_stems:
-        print("\nstem已找到对应文件:")
+        print("\nstem已找到对应条目:")
         for s in exist_stems:
-            files = [p.name for p in stem_to_paths[s]]
-            print(f"{s} -> {files}")
+            names = [p.name for p in stem_to_paths[s]]
+            print(f"{s} -> {names}")
 
     if missing_stems:
         print("\n缺失stem:", file=sys.stderr)
         for s in missing_stems:
             print(s, file=sys.stderr)
 
+def safe_copy_any(src_path: Path, dst_path: Path):
+    """
+    先按普通文件复制
+    如果报IsADirectoryError则当成目录递归复制
+    如果目标目录已存在则允许合并
+    """
+    try:
+        shutil.copy2(src_path, dst_path)
+    except IsADirectoryError:
+        # Python 3.8+ 支持 dirs_exist_ok
+        shutil.copytree(src_path, dst_path, dirs_exist_ok=True)
+
 def copy_mode(target_stems, stem_to_paths, dstdir: Path, strict: bool):
     dstdir.mkdir(parents=True, exist_ok=True)
 
-    copied_files = 0
+    copied_items = 0
     missing_stems = []
 
     for stem in target_stems:
@@ -77,31 +91,37 @@ def copy_mode(target_stems, stem_to_paths, dstdir: Path, strict: bool):
             missing_stems.append(stem)
             continue
 
-        for src_file in paths:
-            dst_file = dstdir / src_file.name
-            shutil.copy2(src_file, dst_file)
-            copied_files += 1
+        for src_obj in paths:
+            dst_obj = dstdir / src_obj.name
+            try:
+                safe_copy_any(src_obj, dst_obj)
+                copied_items += 1
+            except Exception as e:
+                print(f"错误: 复制 {src_obj} -> {dst_obj} 失败: {e}", file=sys.stderr)
 
-    print(f"复制完成 共复制 {copied_files} 个实际文件")
+    print(f"复制完成 共复制 {copied_items} 个条目")
     if missing_stems:
-        print(f"这些stem没有匹配到任何文件: {missing_stems}", file=sys.stderr)
+        print(f"这些stem没有匹配到任何条目: {missing_stems}", file=sys.stderr)
         if strict:
             sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(
-        description="根据不带扩展名的stem列表检查或复制文件"
+        description="根据不带扩展名的stem列表检查或复制 同名文件或目录都复制"
     )
-    parser.add_argument("--json", required=True, help="包含stem列表的json文件路径 比如 [\"IMG_1234\", \"DSC_0001\"]")
-    parser.add_argument("--srcdir", required=True, help="源目录 只扫描这一层 不递归")
-    parser.add_argument("--dstdir", help="目标目录 只在copy模式下需要")
+    parser.add_argument("--json", required=True,
+                        help='包含stem列表的json文件路径 例如 ["IMG_1234","P0001"]')
+    parser.add_argument("--srcdir", required=True,
+                        help="源目录 只扫描这一层 不递归 不做stat权限检查")
+    parser.add_argument("--dstdir",
+                        help="目标目录 只在copy模式需要")
     parser.add_argument("--mode",
                         choices=["check", "copy"],
                         default="check",
                         help="check只检查 copy会实际复制")
     parser.add_argument("--strict",
                         action="store_true",
-                        help="copy模式下 如果有stem完全没找到文件 则返回非零退出码")
+                        help="copy模式下 如果有stem完全没找到 则返回非零退出码")
     args = parser.parse_args()
 
     srcdir = Path(args.srcdir)
