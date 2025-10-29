@@ -16,7 +16,7 @@ module load apptainer/1.3.5
 SRC_DIR_HOST="/scratch/wingli/partverse/textured_part_glbs"
 TGT_DIR_HOST="/scratch/quanta/partverse_selected"
 ID_JSON_HOST="/home/quanta/PartCrafter/notebooks/partverse_selected.json"
-PY_SCRIPT_HOST="/home/quanta/PartCrafter/scripts_guangda/02_convert_partverse.py"
+PY_SCRIPT_HOST="/home/quanta/PartCrafter/scripts_guangda/01_convert_partverse.py"
 SIF_IMG="/home/quanta/PartCrafter/partcrafter.sif"
 
 CONDA_ENV_NAME="partcrafter"
