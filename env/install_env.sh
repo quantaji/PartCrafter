@@ -5,10 +5,10 @@ set -e
 # git submodule update --init --recursive
 
 env_name=partcrafter
-echo ${ENV_FOLDER}
+echo "${ENV_FOLDER}"
 
 # decide software version
-source ${ENV_FOLDER}/installed_version.sh
+source "${ENV_FOLDER}/installed_version.sh"
 
 echo ${INSTALLED_PYTHON_VERSION}
 echo ${INSTALLED_CUDA_VERSION}
