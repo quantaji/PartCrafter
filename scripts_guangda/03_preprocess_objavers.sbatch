@@ -51,7 +51,7 @@ run_once () {
       export PYTHONPATH=${REPO_MNT}:\${PYTHONPATH:-}
 
       # 若仍失败，取消注释下一行查看 sys.path
-      python - <<'PY'; import sys, pprint; pprint.pprint(sys.path); PY
+      # python - <<'PY'; import sys, pprint; pprint.pprint(sys.path); PY
 
       python -m datasets.preprocess.preprocess \
         --input /mnt/input \
