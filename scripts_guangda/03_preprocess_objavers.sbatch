@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=preprocess_partverse
-#SBATCH --output=preprocess_partverse_%j.out
-#SBATCH --error=preprocess_partverse_%j.err
+#SBATCH --output=outlog_%j.out
+#SBATCH --error=errlog_%j.err
 #SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
