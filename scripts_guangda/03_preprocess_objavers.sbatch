@@ -24,7 +24,8 @@ CONDA_ROOT="/miniconda3"
 mkdir -p "$OUTPUT_HOST"
 
 # load apptainer module if available
-module load apptainer 2>/dev/null || true
+module --force purge
+module load StdEnv/2023 apptainer/1.3.5 cuda/12.9
 
 # run container with gpu
 apptainer exec \
