@@ -2,12 +2,12 @@
 #SBATCH --job-name=test_env
 #SBATCH --output=testenv_%j.out
 #SBATCH --error=testenv_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1
+#SBATCH --gpus=h100:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64G
-#SBATCH --time=1:00:00
+#SBATCH --time=5:00
 
 set -euo pipefail
 
@@ -53,8 +53,5 @@ r = pyrender.OffscreenRenderer(64, 64)
 print('[GL_VENDOR]', glGetString(GL_VENDOR).decode())
 print('[GL_RENDERER]', glGetString(GL_RENDERER).decode())
 PY
-
-    # 你的实际任务
-    python -m datasets.preprocess.preprocess --input /mnt/input --output /mnt/output
   "
 
