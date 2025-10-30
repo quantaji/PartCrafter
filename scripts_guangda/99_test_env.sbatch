@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=test_env
-#SBATCH --output=testenv_%j.out
-#SBATCH --error=testenv_%j.err
+#SBATCH --output=output_%j.out
+#SBATCH --error=err_%j.out
 #SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
