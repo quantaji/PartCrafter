@@ -24,8 +24,8 @@ module load StdEnv apptainer cuda/12.9
 export NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 apptainer exec --nv --cleanenv \
-  --bind "${REPO_HOST}:${REPO_MNT}" \
-  --pwd "${REPO_MNT}" \
+    --bind "${REPO_HOST}:${REPO_MNT}" \
+    --pwd "${REPO_MNT}" \
     --env PYOPENGL_PLATFORM=osmesa \
     --env OSMESA_LIBRARY=/usr/lib/x86_64-linux-gnu/libOSMesa.so.8 \
     --env GALLIUM_DRIVER=llvmpipe \
@@ -33,9 +33,6 @@ apptainer exec --nv --cleanenv \
     --env LIBGL_ALWAYS_SOFTWARE=1 \
     --env MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
     --env QT_QPA_PLATFORM=offscreen \
-    --env-unset __EGL_VENDOR_LIBRARY_FILENAMES \
-    --env-unset EGL_PLATFORM \
-    --env-unset DISPLAY \
   "$SIF_IMG" \
   bash -lc "
     set -eo pipefail
