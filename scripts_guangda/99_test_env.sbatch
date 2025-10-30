@@ -29,10 +29,14 @@ apptainer exec --nv --cleanenv \
   --env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
   "$SIF_IMG" bash -s <<'BASH'
 set -euo pipefail
+
+set +u
 # 激活 conda
 export PATH=/miniconda3/bin:$PATH
 eval "$(conda shell.bash hook)"
 conda activate partcrafter
+set -u
+
 # 系统 libstdc++ 优先，避免 GLIBCXX 冲突
 export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH-}
 
