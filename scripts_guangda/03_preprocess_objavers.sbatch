@@ -36,13 +36,15 @@ run_once () {
   local OUT_HOST="$2"
 
   apptainer exec --nv \
-    --bind "${REPO_HOST}:${REPO_MNT}:ro" \
-    --bind "${IN_HOST}:/mnt/input:ro" \
+    --bind "${REPO_HOST}:${REPO_MNT}" \
+    --bind "${IN_HOST}:/mnt/input" \
     --bind "${OUT_HOST}:/mnt/output" \
     --pwd "${REPO_MNT}" \
-    --env PYOPENGL_PLATFORM=egl \
-    --env EGL_PLATFORM=surfaceless \
-    --env MPLBACKEND=Agg \
+    --env PYOPENGL_PLATFORM=osmesa \
+    --env LIBGL_ALWAYS_SOFTWARE=1 \
+    --env MESA_LOADER_DRIVER_OVERRIDE=swrast \
+    --env GALLIUM_DRIVER=llvmpipe \
+    --env OSMESA_LIBRARY=/usr/lib/x86_64-linux-gnu/libOSMesa.so.8 \
     --env LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:/miniconda3/lib:${LD_LIBRARY_PATH:-}" \
     "$SIF_IMG" \
     bash -lc "
