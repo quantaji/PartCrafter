@@ -15,9 +15,17 @@ SIF_IMG="/home/quanta/PartCrafter/partcrafter.sif"
 module --force purge
 module load StdEnv apptainer cuda/12.9
 
-EGV="/usr/share/glvnd/egl_vendor.d/50_mesa.json"
+VENDOR_DIR="${SLURM_TMPDIR:-/tmp}/egl_vendor_mesa"
+mkdir -p "$VENDOR_DIR"
+cat >"$VENDOR_DIR/50_mesa.json" <<'JSON'
+{
+  "file_format_version": "1.0.0",
+  "ICD": { "library_path": "libEGL_mesa.so.0" }
+}
+JSON
 
 apptainer exec --nv --cleanenv \
+  --bind "$VENDOR_DIR:/usr/share/glvnd/egl_vendor.d" \
   --env PYOPENGL_PLATFORM=egl \
   --env EGL_PLATFORM=surfaceless \
   --env __EGL_VENDOR_LIBRARY_FILENAMES=${EGV} \
