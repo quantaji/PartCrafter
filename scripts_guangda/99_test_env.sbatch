@@ -2,7 +2,7 @@
 #SBATCH --job-name=test_env
 #SBATCH --output=testenv_%j.out
 #SBATCH --error=testenv_%j.err
-#SBATCH --gpus=h100:1
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
@@ -21,16 +21,21 @@ module --force purge
 module load StdEnv apptainer cuda/12.9
 
 # host 侧先导出图形能力
-export NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,display,video
+export NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 apptainer exec --nv --cleanenv \
   --bind "${REPO_HOST}:${REPO_MNT}" \
-  --bind "/usr/share/glvnd/egl_vendor.d:/usr/share/glvnd/egl_vendor.d:ro" \
   --pwd "${REPO_MNT}" \
-  --env PYOPENGL_PLATFORM=egl \
-  --env EGL_PLATFORM=surfaceless \
-  --env __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json \
-  --env LD_LIBRARY_PATH='/.singularity.d/libs:/usr/lib/x86_64-linux-gnu' \
+    --env PYOPENGL_PLATFORM=osmesa \
+    --env OSMESA_LIBRARY=/usr/lib/x86_64-linux-gnu/libOSMesa.so.8 \
+    --env GALLIUM_DRIVER=llvmpipe \
+    --env LP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-4} \
+    --env LIBGL_ALWAYS_SOFTWARE=1 \
+    --env MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
+    --env QT_QPA_PLATFORM=offscreen \
+    --env-unset __EGL_VENDOR_LIBRARY_FILENAMES \
+    --env-unset EGL_PLATFORM \
+    --env-unset DISPLAY \
   "$SIF_IMG" \
   bash -lc "
     set -eo pipefail
@@ -38,20 +43,43 @@ apptainer exec --nv --cleanenv \
     eval \"\$(conda shell.bash hook)\"
     conda activate ${CONDA_ENV_NAME}
 
-    # conda 可能改了 LD_LIBRARY_PATH，这里再前置一次注入库
-    export LD_LIBRARY_PATH=/.singularity.d/libs:/usr/lib/x86_64-linux-gnu:\$LD_LIBRARY_PATH
     export PYTHONPATH=${REPO_MNT}:\${PYTHONPATH:-}
 
-    # 自检：应看到 NVIDIA EGL 被注入
-    ls -l /.singularity.d/libs/libEGL_nvidia.so.0 || { echo 'no nvidia EGL injected'; exit 1; }
-
-    # 应打印 NVIDIA Corporation 和 GPU 型号
     python - <<'PY'
-from OpenGL.GL import glGetString, GL_VENDOR, GL_RENDERER
-import pyrender
-r = pyrender.OffscreenRenderer(64, 64)
-print('[GL_VENDOR]', glGetString(GL_VENDOR).decode())
-print('[GL_RENDERER]', glGetString(GL_RENDERER).decode())
+import os, ctypes
+os.environ['PYOPENGL_PLATFORM']='osmesa'
+os.environ['OSMESA_LIBRARY']='/usr/lib/x86_64-linux-gnu/libOSMesa.so.8'
+os.environ['GALLIUM_DRIVER']='llvmpipe'
+os.environ['MESA_LOADER_DRIVER_OVERRIDE']='llvmpipe'
+os.environ['LIBGL_ALWAYS_SOFTWARE']='1'
+
+from OpenGL import GL
+from OpenGL.OSMesa import *
+
+w, h = 64, 64
+
+# 明确 minor 版本并传指针
+attribs = (ctypes.c_int * 9)(
+    OSMESA_FORMAT, OSMESA_RGBA,
+    OSMESA_PROFILE, OSMESA_CORE_PROFILE,
+    OSMESA_CONTEXT_MAJOR_VERSION, 4,
+    OSMESA_CONTEXT_MINOR_VERSION, 5,
+    0
+)
+ctx = OSMesaCreateContextAttrib(ctypes.byref(attribs), None)
+assert ctx, "OSMesaCreateContextAttrib failed"
+
+buf = (ctypes.c_ubyte * (w*h*4))()
+ok = OSMesaMakeCurrent(ctx, ctypes.cast(buf, ctypes.c_void_p),
+                       GL.GL_UNSIGNED_BYTE, w, h)
+assert ok, "OSMesaMakeCurrent failed"
+
+OSMesaPixelStore(OSMESA_Y_UP, 0)
+
+print(GL.glGetString(GL.GL_RENDERER).decode())
+print(GL.glGetString(GL.GL_VERSION).decode())
+
+OSMesaDestroyContext(ctx)
 PY
   "
 
