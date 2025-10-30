@@ -23,9 +23,8 @@ conda create --name $env_name --yes python=${INSTALLED_PYTHON_VERSION}
 eval "$(conda shell.bash hook)"
 conda activate $env_name
 
-conda install -y -c conda-forge sysroot_linux-64=2.17 ffmpeg gxx=${INSTALLED_GCC_VERSION}
+conda install -y -c conda-forge gxx=${INSTALLED_GCC_VERSION} libstdcxx-ng=15.2.0
 conda install -y -c "nvidia/label/cuda-${INSTALLED_CUDA_VERSION}" cuda
-conda install -y -c anaconda openblas=0.3.20
 
 conda deactivate
 conda activate ${env_name}

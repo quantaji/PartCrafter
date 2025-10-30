@@ -11,8 +11,6 @@
 
 set -euo pipefail
 
-REPO_HOST="/home/quanta/PartCrafter"
-REPO_MNT="/workspace"
 SIF_IMG="/home/quanta/PartCrafter/partcrafter.sif"
 CONDA_ENV_NAME="partcrafter"
 CONDA_ROOT="/miniconda3"
@@ -20,66 +18,62 @@ CONDA_ROOT="/miniconda3"
 module --force purge
 module load StdEnv apptainer cuda/12.9
 
-# host 侧先导出图形能力
 export NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 apptainer exec --nv --cleanenv \
-    --bind "${REPO_HOST}:${REPO_MNT}" \
-    --pwd "${REPO_MNT}" \
-    --env PYOPENGL_PLATFORM=osmesa \
-    --env OSMESA_LIBRARY=/usr/lib/x86_64-linux-gnu/libOSMesa.so.8 \
-    --env GALLIUM_DRIVER=llvmpipe \
-    --env LP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-4} \
-    --env LIBGL_ALWAYS_SOFTWARE=1 \
-    --env MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
-    --env QT_QPA_PLATFORM=offscreen \
-    --env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
+    --env PYOPENGL_PLATFORM=egl \
+  --env EGL_PLATFORM=surfaceless \
+  --env __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json \
+  --env LIBGL_ALWAYS_SOFTWARE=1 \
+  --env MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
+  --env GALLIUM_DRIVER=llvmpipe \
+  --env LP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-4} \
+  --env QT_QPA_PLATFORM=offscreen \
+  --env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
   "$SIF_IMG" \
-  bash -lc "
+  bash -lc '
     set -eo pipefail
     export PATH=${CONDA_ROOT}/bin:\$PATH
     eval \"\$(conda shell.bash hook)\"
     conda activate ${CONDA_ENV_NAME}
-
     export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:\${LD_LIBRARY_PATH-}
 
-    export PYTHONPATH=${REPO_MNT}:\${PYTHONPATH:-}
+    python - <<'"'"'PY'"'"'
+import os, numpy as np
+# 兜底，确保在导入前生效
+os.environ.setdefault("PYOPENGL_PLATFORM","egl")
+os.environ.setdefault("EGL_PLATFORM","surfaceless")
+os.environ.setdefault("__EGL_VENDOR_LIBRARY_FILENAMES","/usr/share/glvnd/egl_vendor.d/50_mesa.json")
+os.environ.setdefault("LIBGL_ALWAYS_SOFTWARE","1")
+os.environ.setdefault("MESA_LOADER_DRIVER_OVERRIDE","llvmpipe")
+os.environ.setdefault("GALLIUM_DRIVER","llvmpipe")
 
-    python - <<'PY'
-import os, ctypes
-os.environ['PYOPENGL_PLATFORM']='osmesa'
-os.environ['OSMESA_LIBRARY']='/usr/lib/x86_64-linux-gnu/libOSMesa.so.8'
-os.environ['GALLIUM_DRIVER']='llvmpipe'
-os.environ['MESA_LOADER_DRIVER_OVERRIDE']='llvmpipe'
-os.environ['LIBGL_ALWAYS_SOFTWARE']='1'
-
+import pyrender, trimesh
+from PIL import Image
 from OpenGL import GL
-from OpenGL.OSMesa import *
 
-w, h = 64, 64
+def look_at(eye, target, up):
+    eye=np.array(eye,dtype=np.float32); target=np.array(target,dtype=np.float32); up=np.array(up,dtype=np.float32)
+    z=eye-target; z/=np.linalg.norm(z); x=np.cross(up,z); x/=np.linalg.norm(x); y=np.cross(z,x)
+    m=np.eye(4,dtype=np.float32); m[:3,0]=x; m[:3,1]=y; m[:3,2]=z; m[:3,3]=eye; return m
 
-# 明确 minor 版本并传指针
-attribs = (ctypes.c_int * 9)(
-    OSMESA_FORMAT, OSMESA_RGBA,
-    OSMESA_PROFILE, OSMESA_CORE_PROFILE,
-    OSMESA_CONTEXT_MAJOR_VERSION, 4,
-    OSMESA_CONTEXT_MINOR_VERSION, 5,
-    0
-)
-ctx = OSMesaCreateContextAttrib(ctypes.byref(attribs), None)
-assert ctx, "OSMesaCreateContextAttrib failed"
+mesh=trimesh.creation.icosphere(subdivisions=2,radius=1.0)
+mesh.visual.vertex_colors=[200,60,60,255]
+pm=pyrender.Mesh.from_trimesh(mesh,smooth=True)
 
-buf = (ctypes.c_ubyte * (w*h*4))()
-ok = OSMesaMakeCurrent(ctx, ctypes.cast(buf, ctypes.c_void_p),
-                       GL.GL_UNSIGNED_BYTE, w, h)
-assert ok, "OSMesaMakeCurrent failed"
+scene=pyrender.Scene(bg_color=[255,255,255,0]); scene.add(pm)
+scene.add(pyrender.DirectionalLight(color=np.ones(3),intensity=3.0), pose=np.eye(4))
+cam=pyrender.PerspectiveCamera(yfov=np.deg2rad(45.0),aspectRatio=1.0,znear=0.05,zfar=10.0)
+scene.add(cam, pose=look_at([3,2,3],[0,0,0],[0,1,0]))
 
-OSMesaPixelStore(OSMESA_Y_UP, 0)
+r=pyrender.OffscreenRenderer(256,256)
+renderer=GL.glGetString(GL.GL_RENDERER); version=GL.glGetString(GL.GL_VERSION)
+print("GL_RENDERER:", renderer.decode() if renderer else "None")
+print("GL_VERSION:",  version.decode()  if version  else "None")
 
-print(GL.glGetString(GL.GL_RENDERER).decode())
-print(GL.glGetString(GL.GL_VERSION).decode())
-
-OSMesaDestroyContext(ctx)
+color,depth=r.render(scene); r.delete()
+Image.fromarray(color).save("/tmp/pyrender_cpu_test.png")
+print("WROTE: /tmp/pyrender_cpu_test.png")
 PY
-  "
+  '
 

@@ -4,7 +4,7 @@ ENV TZ=America/Vancouver
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ >/etc/timezone
 RUN apt-get update && \
     apt-get -y install \
-        git curl wget make nano ffmpeg unzip \
+        git curl wget make binutils nano ffmpeg unzip \
         libsm6 libxext6 \
         libegl1 libosmesa6 libegl-mesa0 libglx-mesa0 libgl1-mesa-dri \
         mesa-common-dev libegl1-mesa-dev && \
