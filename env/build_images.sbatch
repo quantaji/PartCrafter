@@ -8,7 +8,7 @@
 
 set -euo pipefail
 module --force purge
-module load podman apptainer 2>/dev/null || true
+module load StdEnv podman apptainer 2>/dev/null || true
 
 WORKDIR="/home/quanta/PartCrafter"
 DOCKERFILE="${WORKDIR}/env/env.dockerfile"

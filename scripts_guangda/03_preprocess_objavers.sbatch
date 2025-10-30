@@ -26,7 +26,7 @@ OUTPUT2_HOST="/scratch/quanta/partverse_partpacker_preprocessed"
 mkdir -p "$OUTPUT1_HOST" "$OUTPUT2_HOST"
 
 module --force purge
-module load StdEnv/2023 apptainer/1.3.5 cuda/12.9
+module load StdEnv apptainer cuda/12.9
 
 # [关键-1] 禁止 --nv 注入图形库，只保留 compute/utility
 export NVIDIA_DRIVER_CAPABILITIES=compute,utility
