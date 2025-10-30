@@ -1,9 +1,13 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 WORKDIR /
 ENV TZ=America/Vancouver
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ >/etc/timezone
 RUN apt-get update && \
-    apt-get -y install git curl wget make nano ffmpeg libsm6 libxext6 unzip libegl1 libegl1-mesa libgl1-mesa-dev && \
+    apt-get -y install \
+        git curl wget make nano ffmpeg unzip \
+        libsm6 libxext6 \
+        libegl1 libosmesa6 libegl-mesa0 libglx-mesa0 libgl1-mesa-dri \
+        mesa-common-dev libegl1-mesa-dev && \
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     chmod +x /Miniconda3-latest-Linux-x86_64.sh && \
     /Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda3 && \
