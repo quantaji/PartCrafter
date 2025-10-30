@@ -44,3 +44,6 @@ pip install torch-cluster -f https://data.pyg.org/whl/torch-${INSTALLED_PYTORCH_
 
 # other packages
 pip install -r "${ENV_FOLDER}/requirements.txt"
+
+# pyrender
+pip install --no-deps -U PyOpenGL PyOpenGL_accelerate

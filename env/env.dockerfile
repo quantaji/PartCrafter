@@ -24,4 +24,6 @@ RUN export PATH="/miniconda3/bin:$PATH" && \
     conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
     bash ${ENV_FOLDER}/install_env.sh && \
     rm -rf /root/.cache/*
-
+ENV SHELL=/bin/bash \
+    PATH=/miniconda3/envs/pointcrafter/bin:/miniconda3/bin:$PATH \
+    CONDA_PREFIX=/miniconda3/envs/pointcrafter \
