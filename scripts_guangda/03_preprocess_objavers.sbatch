@@ -28,24 +28,21 @@ mkdir -p "$OUTPUT1_HOST" "$OUTPUT2_HOST"
 module --force purge
 module load StdEnv apptainer cuda/12.9
 
-# [关键-1] 禁止 --nv 注入图形库，只保留 compute/utility
-export NVIDIA_DRIVER_CAPABILITIES=compute,utility
+export NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,display,video
 
 run_once () {
   local IN_HOST="$1"
   local OUT_HOST="$2"
 
-  apptainer exec --nv \
+  apptainer exec --nv --cleanenv \
     --bind "${REPO_HOST}:${REPO_MNT}" \
     --bind "${IN_HOST}:/mnt/input" \
     --bind "${OUT_HOST}:/mnt/output" \
     --pwd "${REPO_MNT}" \
-    --env PYOPENGL_PLATFORM=osmesa \
-    --env LIBGL_ALWAYS_SOFTWARE=1 \
-    --env MESA_LOADER_DRIVER_OVERRIDE=swrast \
-    --env GALLIUM_DRIVER=llvmpipe \
-    --env OSMESA_LIBRARY=/usr/lib/x86_64-linux-gnu/libOSMesa.so.8 \
-    --env LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:/miniconda3/lib:${LD_LIBRARY_PATH:-}" \
+    --env PYOPENGL_PLATFORM=egl \
+    --env EGL_PLATFORM=surfaceless \
+    --env __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json \
+    --env LD_LIBRARY_PATH='/.singularity.d/libs:/usr/lib/x86_64-linux-gnu' \
     "$SIF_IMG" \
     bash -lc "
       set -eo pipefail
