@@ -28,7 +28,7 @@ apptainer exec --nv --cleanenv \
   --bind "$VENDOR_DIR:/usr/share/glvnd/egl_vendor.d" \
   --env PYOPENGL_PLATFORM=egl \
   --env EGL_PLATFORM=surfaceless \
-  --env __EGL_VENDOR_LIBRARY_FILENAMES=${EGV} \
+  --env __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json \
   --env LIBGL_ALWAYS_SOFTWARE=1 \
   --env MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
   --env GALLIUM_DRIVER=llvmpipe \
