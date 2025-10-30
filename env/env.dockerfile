@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM docker.io/library/ubuntu:24.04
 WORKDIR /
 ENV TZ=America/Vancouver
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ >/etc/timezone
