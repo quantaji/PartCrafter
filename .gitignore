@@ -5,3 +5,6 @@ preprocessed_data
 pretrained_weights
 results
 output_partcrafter
+*.out
+*.err
+*.sif
