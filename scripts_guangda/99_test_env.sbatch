@@ -33,12 +33,15 @@ apptainer exec --nv --cleanenv \
     --env LIBGL_ALWAYS_SOFTWARE=1 \
     --env MESA_LOADER_DRIVER_OVERRIDE=llvmpipe \
     --env QT_QPA_PLATFORM=offscreen \
+    --env LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 \
   "$SIF_IMG" \
   bash -lc "
     set -eo pipefail
     export PATH=${CONDA_ROOT}/bin:\$PATH
     eval \"\$(conda shell.bash hook)\"
     conda activate ${CONDA_ENV_NAME}
+
+    export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:\${LD_LIBRARY_PATH-}
 
     export PYTHONPATH=${REPO_MNT}:\${PYTHONPATH:-}
 
