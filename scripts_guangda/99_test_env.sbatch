@@ -20,14 +20,16 @@ CONDA_ROOT="/miniconda3"
 module --force purge
 module load StdEnv apptainer cuda/12.9
 
-# 关键：注入图形能力在 exec 之前导出
+# host 侧先导出图形能力
 export NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,display,video
 
 apptainer exec --nv --cleanenv \
   --bind "${REPO_HOST}:${REPO_MNT}" \
+  --bind "/usr/share/glvnd/egl_vendor.d:/usr/share/glvnd/egl_vendor.d:ro" \
   --pwd "${REPO_MNT}" \
   --env PYOPENGL_PLATFORM=egl \
   --env EGL_PLATFORM=surfaceless \
+  --env __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json \
   --env LD_LIBRARY_PATH='/.singularity.d/libs:/usr/lib/x86_64-linux-gnu' \
   "$SIF_IMG" \
   bash -lc "
@@ -35,38 +37,24 @@ apptainer exec --nv --cleanenv \
     export PATH=${CONDA_ROOT}/bin:\$PATH
     eval \"\$(conda shell.bash hook)\"
     conda activate ${CONDA_ENV_NAME}
+
+    # conda 可能改了 LD_LIBRARY_PATH，这里再前置一次注入库
+    export LD_LIBRARY_PATH=/.singularity.d/libs:/usr/lib/x86_64-linux-gnu:\$LD_LIBRARY_PATH
     export PYTHONPATH=${REPO_MNT}:\${PYTHONPATH:-}
 
-    echo '[check] injected NVIDIA EGL libs:'
-    ls -l /.singularity.d/libs/libEGL_nvidia.so* || { echo 'no nvidia EGL injected'; exit 1; }
+    # 自检：应看到 NVIDIA EGL 被注入
+    ls -l /.singularity.d/libs/libEGL_nvidia.so.0 || { echo 'no nvidia EGL injected'; exit 1; }
 
-    # 在容器内写 vendor JSON,并指向注入的 libEGL_nvidia.so.0
-    cat > /tmp/10_nvidia.json <<EOF
-{\"file_format_version\":\"1.0.0\",\"ICD\":{\"library_path\":\"libEGL_nvidia.so.0\"}}
-EOF
-    export __EGL_VENDOR_LIBRARY_FILENAMES=/tmp/10_nvidia.json
-
-    # conda activate 可能改动了 LD_LIBRARY_PATH, 重新前置注入库
-    export LD_LIBRARY_PATH=/.singularity.d/libs:/usr/lib/x86_64-linux-gnu:\$LD_LIBRARY_PATH
-
-    echo '[check] /dev/nvidia*:'
-    ls -l /dev/nvidia* || true
-
-    python - <<'PY'
-from ctypes import c_void_p
-from OpenGL.raw.EGL.EXT.device_enumeration import eglQueryDevicesEXT
-N=16
-arr=(c_void_p*N)()
-ok=eglQueryDevicesEXT(N, arr, None)
-cnt=sum(1 for p in arr if p)
-print('egl devices ok=', bool(ok), 'count=', cnt)
-PY
-
+    # 应打印 NVIDIA Corporation 和 GPU 型号
     python - <<'PY'
 from OpenGL.GL import glGetString, GL_VENDOR, GL_RENDERER
 import pyrender
-r=pyrender.OffscreenRenderer(64,64)
+r = pyrender.OffscreenRenderer(64, 64)
 print('[GL_VENDOR]', glGetString(GL_VENDOR).decode())
 print('[GL_RENDERER]', glGetString(GL_RENDERER).decode())
 PY
+
+    # 你的实际任务
+    python -m datasets.preprocess.preprocess --input /mnt/input --output /mnt/output
   "
+
