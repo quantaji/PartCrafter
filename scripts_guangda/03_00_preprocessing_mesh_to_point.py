@@ -45,6 +45,20 @@ def need_skip(target_dir: Path, ignore_existing: bool) -> bool:
     return True
 
 
+def filter_mesh(obj):
+    import trimesh
+
+    if isinstance(obj, trimesh.Trimesh):
+        return obj.copy()
+    if isinstance(obj, trimesh.Scene):
+        sc = trimesh.Scene()
+        for name, g in obj.geometry.items():
+            if isinstance(g, trimesh.Trimesh):
+                sc.add_geometry(g.copy(), node_name=name)
+        return sc
+    return trimesh.Scene()
+
+
 def process_one(src_path: Path, out_root: Path):
     mesh_name = src_path.stem
     out_dir = out_root / mesh_name
@@ -55,6 +69,9 @@ def process_one(src_path: Path, out_root: Path):
     # load and normalize
     mesh = trimesh.load(src_path.as_posix(), process=False)
     mesh = normalize_mesh(mesh)
+
+    # filter out non-mesh geometry
+    mesh = filter_mesh(mesh)
 
     # parts
     # assume normalize_mesh returns a trimesh.Scene when input is multi-geometry
@@ -125,8 +142,7 @@ def main():
         if shard == args.shard_index:
             selected.append(p)
 
-    logging.info("总计发现 %d 个文件，当前分片选择 %d 个 (index=%d/%d)",
-                 len(files), len(selected), args.shard_index, args.num_shards)
+    logging.info("总计发现 %d 个文件，当前分片选择 %d 个 (index=%d/%d)", len(files), len(selected), args.shard_index, args.num_shards)
 
     processed = 0
     skipped_existing = 0

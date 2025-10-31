@@ -6,6 +6,8 @@ import argparse
 import logging
 import hashlib
 from pathlib import Path
+import numpy as np
+from PIL import Image
 
 import numpy as np  # 若下游需要，保留
 import trimesh
@@ -15,11 +17,61 @@ from src.utils.render_utils import render_single_view
 
 REQUIRED_FILES = ["rendering.png"]
 
+ALLOWED_MODES = {"L", "RGB", "RGBA", "F"}  # uint8 与 float32 保持不动
+
+
+def normalize_texture_pil(im: Image.Image):
+    if not isinstance(im, Image.Image):
+        return im
+    m = im.mode
+    if m in ALLOWED_MODES:
+        return im
+    if m == "1":  # 1bit -> 8bit 灰度
+        return im.convert("L")
+    if m == "P":  # 调色板 -> RGBA
+        return im.convert("RGBA")
+    if m == "LA":  # 灰度+alpha -> RGBA
+        return im.convert("RGBA")
+    if m in {"CMYK", "YCbCr", "HSV"}:  # 这些已是 uint8，但通道不兼容 -> RGB
+        return im.convert("RGB")
+    if m in {"I;16", "I;16B", "I;16L", "I"}:  # 16/32 位整型 -> 8bit 灰度
+        arr = np.array(im, dtype=np.uint32)
+        arr8 = (arr >> 8).astype(np.uint8)  # 不做拉伸，仅丢高 8 位
+        return Image.fromarray(arr8, mode="L")
+    # 兜底
+    return im.convert("RGB")
+
+
+def coerce_trimesh_textures_pil(tm):
+    vis = getattr(tm, "visual", None)
+    if vis is None:
+        return
+    mats = []
+    if getattr(vis, "material", None) is not None:
+        mats.append(vis.material)
+    if getattr(vis, "materials", None):
+        mats.extend(list(vis.materials))
+
+    fields = (
+        "image",  # SimpleMaterial
+        "baseColorTexture",
+        "metallicRoughnessTexture",
+        "normalTexture",
+        "occlusionTexture",
+        "emissiveTexture",
+        "diffuseTexture",
+        "specularGlossinessTexture",
+    )
+    for m in mats:
+        for f in fields:
+            if hasattr(m, f):
+                tex = getattr(m, f)
+                setattr(m, f, normalize_texture_pil(tex))
+
 
 def setup_logging():
     h = logging.StreamHandler(stream=sys.stdout)
-    h.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s",
-                                     "%Y-%m-%d %H:%M:%S"))
+    h.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"))
     root = logging.getLogger()
     root.handlers.clear()
     root.addHandler(h)
@@ -47,8 +99,7 @@ def need_skip(out_dir: Path, ignore_existing: bool) -> bool:
     return all((out_dir / f).exists() for f in REQUIRED_FILES)
 
 
-def process_one(src_path: Path, out_root: Path,
-                radius: float, image_size, light_intensity: float, num_env_lights: int):
+def process_one(src_path: Path, out_root: Path, radius: float, image_size, light_intensity: float, num_env_lights: int):
     stem = src_path.stem
     out_dir = out_root / stem
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -65,14 +116,7 @@ def process_one(src_path: Path, out_root: Path,
     img.save(out_dir / "rendering.png")
     # 可选保存渲染配置，便于追溯
     with open(out_dir / "render_cfg.json", "w") as f:
-        json.dump(
-            dict(radius=radius,
-                 image_size=list(image_size),
-                 light_intensity=light_intensity,
-                 num_env_lights=num_env_lights,
-                 src=str(src_path)),
-            f, indent=2
-        )
+        json.dump(dict(radius=radius, image_size=list(image_size), light_intensity=light_intensity, num_env_lights=num_env_lights, src=str(src_path)), f, indent=2)
 
 
 def main():
@@ -99,8 +143,7 @@ def main():
         logging.error("src_dir 不存在: %s", src_dir)
         sys.exit(1)
     if args.num_shards <= 0 or not (0 <= args.shard_index < args.num_shards):
-        logging.error("分片参数非法: num_shards=%d shard_index=%d",
-                      args.num_shards, args.shard_index)
+        logging.error("分片参数非法: num_shards=%d shard_index=%d", args.num_shards, args.shard_index)
         sys.exit(1)
     tgt_dir.mkdir(parents=True, exist_ok=True)
 
@@ -119,8 +162,7 @@ def main():
         if sha1_shard(rel, args.num_shards) == args.shard_index:
             selected.append(p)
 
-    logging.info("总计 %d 个文件，本分片 %d 个 (index=%d/%d)",
-                 len(files), len(selected), args.shard_index, args.num_shards)
+    logging.info("总计 %d 个文件，本分片 %d 个 (index=%d/%d)", len(files), len(selected), args.shard_index, args.num_shards)
 
     ok = 0
     skipped = 0
@@ -134,7 +176,8 @@ def main():
         try:
             logging.info("[%d/%d] 渲染: %s", i, len(selected), sp)
             process_one(
-                sp, tgt_dir,
+                sp,
+                tgt_dir,
                 radius=args.radius,
                 image_size=img_size,
                 light_intensity=args.light_intensity,
