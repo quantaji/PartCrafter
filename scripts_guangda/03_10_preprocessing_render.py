@@ -105,6 +105,7 @@ def process_one(src_path: Path, out_root: Path, radius: float, image_size, light
     out_dir.mkdir(parents=True, exist_ok=True)
 
     mesh = normalize_mesh(trimesh.load(src_path.as_posix(), process=False)).to_geometry()
+    mesh = coerce_trimesh_textures_pil(mesh)
     img = render_single_view(
         mesh,
         radius=radius,
