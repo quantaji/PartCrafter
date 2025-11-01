@@ -113,6 +113,8 @@ def main():
     tgt_dir = Path(args.tgt_dir).resolve()
     ext = args.ext.lower()
 
+    logging.info("Start processing mesh to point")
+
     if not src_dir.exists():
         logging.error("src_dir %s 不存在", src_dir)
         sys.exit(1)
@@ -166,7 +168,7 @@ def main():
             failed += 1
             logging.error("失败: %s | %s", path, repr(e))
 
-    logging.info("统计 | 成功: %d 跳过: %d 失败: %d", processed, skipped_existing, failed)
+    logging.info("Mesh to point 统计 | 成功: %d 跳过: %d 失败: %d", processed, skipped_existing, failed)
 
 
 if __name__ == "__main__":

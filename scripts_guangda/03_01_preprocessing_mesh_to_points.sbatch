@@ -60,9 +60,8 @@ run_once () {
         --tgt_dir /mnt/output \
         --num_shards ${NUM_SHARDS} \
         --shard_index ${SHARD_INDEX} \
-        ${IGNORE_EXISTING_FLAG}
+        ${IGNORE_EXISTING_FLAG:-}
     "
 }
 
-# 第一批
 run_once "$INPUT_HOST" "$OUTPUT_HOST"
