@@ -20,9 +20,9 @@ PIPELINE_REL="scripts_guangda/03_10_preprocessing_render.py"
 
 
 # INPUT_HOST="/scratch/quanta/objaverse_selected"
-# OUTPUT_HOST="/scratch/quanta/objaverse_partpacker_preprocessed"
+# OUTPUT_HOST="/scratch/quanta/objaverse_partcrafter_preprocessed"
 INPUT_HOST="/scratch/quanta/partverse_selected"
-OUTPUT_HOST="/scratch/quanta/partverse_partpacker_preprocessed"
+OUTPUT_HOST="/scratch/quanta/partverse_partcrafter_preprocessed"
 
 # 分片
 NUM_SHARDS=1

@@ -19,10 +19,10 @@ CONDA_ROOT="/miniconda3"
 CONDA_ENV_NAME="partcrafter"
 RMBG_REL="scripts_guangda/03_20_preprocesing_rmbg.py"   # 修改为上面这段脚本的相对路径
 
-INPUT_HOST="/scratch/quanta/objaverse_partpacker_preprocessed"
-OUTPUT_HOST="/scratch/quanta/objaverse_partpacker_preprocessed"
-# INPUT_HOST="/scratch/quanta/partverse_partpacker_preprocessed"
-# OUTPUT_HOST="/scratch/quanta/partverse_partpacker_preprocessed"
+INPUT_HOST="/scratch/quanta/objaverse_partcrafter_preprocessed"
+OUTPUT_HOST="/scratch/quanta/objaverse_partcrafter_preprocessed"
+# INPUT_HOST="/scratch/quanta/partverse_partcrafter_preprocessed"
+# OUTPUT_HOST="/scratch/quanta/partverse_partcrafter_preprocessed"
 
 mkdir -p "$OUTPUT_HOST" "$OUTPUT_HOST"
 

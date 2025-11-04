@@ -19,9 +19,9 @@ CONDA_ROOT="/miniconda3"
 PIPELINE_REL="scripts_guangda/03_00_preprocessing_mesh_to_point.py"   # 你的pipeline脚本在仓库内的相对路径
 
 INPUT_HOST="/scratch/quanta/objaverse_selected"
-OUTPUT_HOST="/scratch/quanta/objaverse_partpacker_preprocessed"
+OUTPUT_HOST="/scratch/quanta/objaverse_partcrafter_preprocessed"
 # INPUT_HOST="/scratch/quanta/partverse_selected"
-# OUTPUT_HOST="/scratch/quanta/partverse_partpacker_preprocessed"
+# OUTPUT_HOST="/scratch/quanta/partverse_partcrafter_preprocessed"
 
 # 分片参数
 NUM_SHARDS=1

@@ -19,9 +19,9 @@ CONDA_ENV_NAME="partcrafter"
 IOU_REL="scripts_guangda/03_30_preprocessing_iou.py"  # 置为前述第4部分脚本相对路径
 
 INPUT_HOST="/scratch/quanta/objaverse_selected"
-OUTPUT_HOST="/scratch/quanta/objaverse_partpacker_preprocessed"
+OUTPUT_HOST="/scratch/quanta/objaverse_partcrafter_preprocessed"
 # INPUT_HOST="/scratch/quanta/partverse_selected"
-# OUTPUT_HOST="/scratch/quanta/partverse_partpacker_preprocessed"
+# OUTPUT_HOST="/scratch/quanta/partverse_partcrafter_preprocessed"
 
 mkdir -p "$OUTPUT_HOST"
 
