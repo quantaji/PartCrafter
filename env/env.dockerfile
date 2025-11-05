@@ -6,7 +6,7 @@ RUN apt-get update && \
     apt-get -y install \
         git curl wget make binutils nano ffmpeg unzip \
         libsm6 libxext6 \
-        libegl1 libosmesa6 libegl-mesa0 libglx-mesa0 libgl1-mesa-dri \
+        libegl1 libosmesa6 libosmesa6-dev libegl-mesa0 libglx-mesa0 libgl1-mesa-dri libglu1-mesa libglu1-mesa-dev \
         mesa-common-dev libegl1-mesa-dev && \
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     chmod +x /Miniconda3-latest-Linux-x86_64.sh && \
