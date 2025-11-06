@@ -2,20 +2,20 @@ FROM docker.io/library/ubuntu:24.04
 WORKDIR /
 ENV TZ=America/Vancouver
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ >/etc/timezone
-RUN apt-get update && \
-    apt-get -y install \
-        git curl wget make binutils nano ffmpeg unzip \
-        libsm6 libxext6 \
-        libegl1 libosmesa6 libosmesa6-dev libegl-mesa0 libglx-mesa0 libgl1-mesa-dri libglu1-mesa libglu1-mesa-dev \
-        mesa-common-dev libegl1-mesa-dev && \
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+COPY ./env /env
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        git curl wget make binutils nano unzip \
+        libosmesa6 libgl1 \
+        python3 python3-pip python3-dev build-essential && \
+        rm -rf /var/lib/apt/lists/* && \
+        bash /env/remove_egl_glx.sh && bash /env/check_removal.sh
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     chmod +x /Miniconda3-latest-Linux-x86_64.sh && \
     /Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda3 && \
     rm -rf /Miniconda3-latest-Linux-x86_64.sh && \
     /miniconda3/bin/conda init bash && \
     chmod -R 777 /miniconda3
 RUN export PATH="/miniconda3/bin:$PATH" && conda config --set auto_activate_base false
-COPY ./env /env
 WORKDIR /
 ENV ENV_FOLDER=/env
 SHELL ["/bin/bash", "-c"] 
