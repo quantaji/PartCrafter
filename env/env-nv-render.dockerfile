@@ -1,14 +1,13 @@
-FROM docker.io/library/ubuntu:24.04
+FROM nvidia/opengl:1.2-glvnd-runtime-ubuntu22.04
 WORKDIR /
 ENV TZ=America/Vancouver
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ >/etc/timezone
 RUN apt-get update && \
-    apt-get -y install \
-        git curl wget make binutils nano ffmpeg unzip \
-        libsm6 libxext6 \
-        libegl1 libosmesa6 libosmesa6-dev libegl-mesa0 libglx-mesa0 libgl1-mesa-dri libglu1-mesa libglu1-mesa-dev \
-        mesa-common-dev libegl1-mesa-dev && \
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        git curl wget make binutils nano unzip \
+        libgl1 libegl1 libglvnd0 libopengl0 mesa-utils && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     chmod +x /Miniconda3-latest-Linux-x86_64.sh && \
     /Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda3 && \
     rm -rf /Miniconda3-latest-Linux-x86_64.sh && \
@@ -26,4 +25,4 @@ RUN export PATH="/miniconda3/bin:$PATH" && \
     rm -rf /root/.cache/*
 ENV SHELL=/bin/bash \
     PATH=/miniconda3/envs/pointcrafter/bin:/miniconda3/bin:$PATH \
-    CONDA_PREFIX=/miniconda3/envs/pointcrafter 
+    CONDA_PREFIX=/miniconda3/envs/pointcrafter
