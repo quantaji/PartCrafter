@@ -11,7 +11,7 @@ from diffusers.utils.loading_utils import load_video
 import torch
 from torchvision.utils import make_grid
 
-os.environ['PYOPENGL_PLATFORM'] = 'egl'
+os.environ['PYOPENGL_PLATFORM'] = 'osmesa'
 
 def render(
     scene: pyrender.Scene,

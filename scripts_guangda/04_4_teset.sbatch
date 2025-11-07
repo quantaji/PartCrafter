@@ -1,21 +1,15 @@
-# # local
-# bash scripts/train_partcrafter.sh --config scripts_guangda/04_0_train_local_test.yaml --use_ema \
-#   --gradient_accumulation_steps 4 \
-#   --output_dir output_partcrafter \
-#   --tag scaleup_mp8_nt512
+#!/bin/bash
+#SBATCH --job-name=test_training
+#SBATCH --output=outlog_%j.out
+#SBATCH --error=errlog_%j.out
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_3g.40gb:1
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=64G
+#SBATCH --time=1:00:00
 
 
-#   35g for bs 8,
-#   42g for bs 16,
-# test for gradient accumulation step
-# not chainging usage
-
-
-# salloc --time=2:00:0 --ntasks=1 --gres=gpu:nvidia_h100_80gb_hbm3_3g.40gb:1 --mem=64G --nodes=1 # split of H100 does not give render capabilities
-# salloc --time=2:00:0 --ntasks=1 --gpus=h100:1 --mem=64G --nodes=1
-# module --force purge
-# module load StdEnv apptainer cuda/12.9
-# apptainer shell --bind /scratch/quanta/partcrafter_test_dataset:/dataset --bind /home/quanta:/home/quanta --nv partcrafter.sif
 
 REPO_HOST="/home/quanta/PartCrafter"
 SIF_IMG="/home/quanta/PartCrafter/partcrafter.sif"
@@ -62,4 +56,3 @@ bash scripts/train_partcrafter.sh --config scripts_guangda/04_1_train_cc_test.ya
   --max_val_steps 0 \
   --tag scaleup_mp8_nt512
 BASH
-
