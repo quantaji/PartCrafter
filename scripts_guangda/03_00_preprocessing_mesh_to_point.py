@@ -46,16 +46,28 @@ def need_skip(target_dir: Path, ignore_existing: bool) -> bool:
 
 
 def filter_mesh(obj):
-    import trimesh
-
     if isinstance(obj, trimesh.Trimesh):
         return obj.copy()
+
     if isinstance(obj, trimesh.Scene):
-        sc = trimesh.Scene()
-        for name, g in obj.geometry.items():
-            if isinstance(g, trimesh.Trimesh):
-                sc.add_geometry(g.copy(), node_name=name)
-        return sc
+        # 1. 完整复制场景 (geometry + graph)
+        #    现在 new_scene 拥有正确的 scale
+        new_scene = obj.copy()
+        
+        # 2. 找出所有 *非* Trimesh 的几何体
+        geometries_to_remove = []
+        for name, geom in new_scene.geometry.items():
+            if not isinstance(geom, trimesh.Trimesh):
+                geometries_to_remove.append(name)
+        
+        # 3. 从复制的场景中删除它们
+        #    这会自动清理 graph 中对它们的引用
+        if geometries_to_remove:
+            new_scene.delete_geometry(geometries_to_remove)
+            
+        return new_scene
+    
+    # 如果输入不是 Trimesh 或 Scene，返回一个空场景
     return trimesh.Scene()
 
 
